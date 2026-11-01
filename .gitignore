@@ -1,0 +1,9 @@
+# Ignore everything by default, then whitelist project content
+/*
+!/.gitignore
+!/godot/
+!/server/
+!/sitl
+
+# Build output
+/server/server

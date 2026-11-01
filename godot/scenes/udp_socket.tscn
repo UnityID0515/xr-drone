@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://ct7txt1ved230"]
+
+[ext_resource type="Script" uid="uid://dqwagrhjssvg8" path="res://scripts/udp_socket.gd" id="1_ppw2r"]
+
+[node name="UDPSocket" type="Node" unique_id=1091624020 node_paths=PackedStringArray("ping_timer")]
+script = ExtResource("1_ppw2r")
+ping_timer = NodePath("PingTimer")
+
+[node name="PingTimer" type="Timer" parent="." unique_id=825682806]
+wait_time = 0.5
+autostart = true

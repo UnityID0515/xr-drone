@@ -1,0 +1,3 @@
+#!/bin/bash
+HEADLESS=1 PX4_SIM_MODEL=gz_x500 px4-gazebo
+

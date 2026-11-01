@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://djwdnhiw110pw"]
+
+[ext_resource type="Script" uid="uid://b6w2rwn4jbjhc" path="res://scripts/drone.gd" id="1_nnsk1"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_nnsk1"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_rwgxs"]
+sky_material = SubResource("ProceduralSkyMaterial_nnsk1")
+
+[sub_resource type="Environment" id="Environment_4wyf3"]
+sky = SubResource("Sky_rwgxs")
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jiw6r"]
+albedo_color = Color(1, 0.19999999, 0.19999999, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_nay5r"]
+material = SubResource("StandardMaterial3D_jiw6r")
+size = Vector3(0.2, 0.05, 0.2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ibu1e"]
+albedo_color = Color(0.2, 0.2, 0.2, 1)
+
+[node name="World" type="Node3D" unique_id=1232064359]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=713424369]
+environment = SubResource("Environment_4wyf3")
+
+[node name="Drone" type="Node3D" parent="." unique_id=669281823 node_paths=PackedStringArray("camera_3d")]
+script = ExtResource("1_nnsk1")
+camera_3d = NodePath("../Camera3D")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Drone" unique_id=1931683427]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 0)
+mesh = SubResource("BoxMesh_nay5r")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=878475508]
+transform = Transform3D(1, 0, 0, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, 0, 0.3, 0.4)
+
+[node name="Ground" type="CSGBox3D" parent="." unique_id=1931332172]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+size = Vector3(20, 1, 20)
+
+[node name="CSGSphere3D" type="CSGSphere3D" parent="." unique_id=694203914]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, -3)
+material = SubResource("StandardMaterial3D_ibu1e")
