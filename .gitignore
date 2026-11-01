@@ -1,5 +1,6 @@
 # Ignore everything by default, then whitelist project content
 /*
+!/README.md
 !/.gitignore
 !/godot/
 !/server/
