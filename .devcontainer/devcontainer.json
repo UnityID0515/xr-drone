@@ -1,0 +1,18 @@
+{
+  "name": "XR-Drone",
+  "build": { "dockerfile": "Dockerfile" },
+  "runArgs": ["-p=4444:4444/udp"],
+  
+  "mounts": ["source=claude,target=/.claude,type=volume"],
+  "containerEnv": { "CLAUDE_CONFIG_DIR": "/.claude" },
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "anthropic.claude-code"
+      ]
+    }
+  }
+}
