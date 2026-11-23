@@ -1,10 +1,2 @@
-# Ignore everything by default, then whitelist project content
-/*
-!/README.md
-!/.gitignore
-!/godot/
-!/server/
-!/sitl
-
-# Build output
-/server/server
+# CMake build output
+/build/

@@ -1,81 +1,64 @@
 # XR Drone
 
-Control a simulated PX4 drone from a Godot front end. A C++ server bridges Godot and PX4 SITL (Gazebo): it receives movement commands from Godot over UDP and forwards them to the drone through MAVSDK offboard control.
+Control a simulated PX4 drone from a Godot front end. A C++ server bridges Godot and PX4 SITL (Gazebo): it streams the drone's position and attitude to Godot and turns Godot's movement commands into MAVSDK offboard velocity setpoints. Everything travels over UDP in a small binary format (see [SPEC.md](SPEC.md)).
+
+```
+Godot (host) <--UDP 4444--> xr_drone_server <--MAVLink 14540--> PX4 + Gazebo
+```
 
 ## Setup
 
-- **distrobox:** Install `distrobox` on your preferred Linux distro and create a `Ubuntu:24.04` container.
-
-```
-distrobox create -i ubuntu24.04 -n xr-drone -H ~/Projects/xr-drone
-distrobox enter xr-drone
-```
-
-Remember to update and upgrade after setting up the container.
-
-```
-sudo apt update && sudo apt upgrade -y
-```
-
-- **lsb-release:** For some reason it is not included in the base installation. 
-
-```
-sudo apt install lsb-release -y
-```
-
-- **Gazebo dependencies:** These are copy-pasted from the official PX4 docs.
-
-```
-# Add OSRF Gazebo repository (one-time setup)
-sudo curl -fsSL https://packages.osrfoundation.org/gazebo.gpg \
-  -o /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] \
-  http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" \
-  | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-sudo apt update
-```
-
-- **The `.deb` packages:** Install these `.deb` packages as well.
-
-    - **PX4 Gazebo SITL**: Follow the `GitHub Actions` link and find the latest scheduled build under Artifacts.
-    ```
-    https://github.com/PX4/PX4-Autopilot/actions/workflows/build_deb_package.yml?query=event%3Aschedule
-    ```
-
-    - **MAVSDK C++ library:** The packages are located under `GitHub Releases`, download the latest version.
-    ```
-    https://github.com/mavlink/MAVSDK/releases
-    ```
-
-Now install them both:
-```
-# Install (resolves Gazebo dependencies automatically)
-sudo apt install ./px4-gazebo_*.deb
-
-sudo dpkg -i libmavsdk-dev*.deb
-```
-
-- **Godot:** This one can be installed outside of the container, but since it is just a binary it doesn't really matter. Install from the official `Godot Downloads` page.
-```
-https://godotengine.org/download/linux/
-```
+1. Install Docker and VS Code with the Dev Containers extension.
+2. Open this folder in VS Code and choose **Reopen in Container**. The image is based on `px4io/px4-sitl-gazebo` and adds the MAVSDK C++ library. UDP port 4444 is published to the host.
+3. Install [Godot 4](https://godotengine.org/download/linux/) on the host. It is a single binary and doesn't need to run in the container.
 
 ## Usage
 
-Build the MAVSDK server first (from the repo root, inside the container):
-```
-g++ -std=c++20 -I/usr/include/mavsdk server/main.cpp -o server/server -l:libmavsdk.so.4 -pthread
-```
+Run the **PX4 + Server** task (`Terminal > Run Task`). It builds the server, starts PX4 with Gazebo (headless, vehicle from `PX4_SIM_MODEL`, default `gz_x500`), and starts the server. The server waits for PX4, arms, takes off, and enters offboard mode. Press Ctrl+C in the server terminal to land and exit.
 
-Spin up `SITL` in one terminal using:
-```
-./sitl
-```
+The tasks can also be run one at a time: `Build`, `PX4`, `Server`.
 
-and start the `MAVSDK` server (The binary that you compiled yourself).
+Then open `godot/` in Godot and press play. The client pings `127.0.0.1:4444` every 0.5 s. The server starts streaming telemetry after the first ping and stops if it hears nothing for 5 s.
 
-Open up `Godot` and press `play` on the top right corner.
+Without the tasks:
+
+```
+cmake -S . -B build && cmake --build build -j
+px4-gazebo                       # in one terminal (HEADLESS=1 for no GUI)
+./build/xr_drone_server          # in another
+```
 
 ### Controls
 
-Control the drone with `WASD` keys and `Q/E` for altitude.
+`WASD` moves, `Q`/`E` changes altitude. When no movement packet arrives for 200 ms the drone stops.
+
+## Protocol
+
+Little-endian, `float32` payloads.
+
+```
+[u8 header_size][header_size bytes: type name][payload]
+```
+
+| Type       | Direction        | Payload                                   |
+| ---------- | ---------------- | ----------------------------------------- |
+| `ping`     | both             | none (the server replies with a ping)     |
+| `position` | server -> Godot  | `x y z vx vy vz`, Godot frame (EUS)       |
+| `attitude` | server -> Godot  | quaternion `w x y z`, Godot frame (EUS)   |
+| `movement` | Godot -> server  | `x y z` m/s in the Godot frame, body-relative: x right, y up, z back |
+
+The server converts between MAVSDK's NED frame and Godot's EUS frame before sending and after receiving.
+
+## Layout
+
+| Path                | Contents                                              |
+| ------------------- | ----------------------------------------------------- |
+| `src/main.cpp`      | server: MAVSDK telemetry, flight sequence, offboard   |
+| `src/udpserver.cpp` | single-client UDP socket (`include/udpserver.h`)      |
+| `src/message.cpp`   | binary codec and frame conversion (`include/message.h`) |
+| `tools/`            | `message_test` (codec tests), `udp_echo` (socket check) |
+| `godot/`            | Godot project; `scripts/message.gd` is the client codec |
+| `.devcontainer/`    | dev container definition                              |
+| `.vscode/`          | build and run tasks                                   |
+
+Run the codec tests with `./build/message_test`.
