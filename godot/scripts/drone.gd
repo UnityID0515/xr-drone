@@ -32,8 +32,7 @@ func _process(delta: float) -> void:
 	var flat_input := Input.get_vector("move_left", "move_right", "move_front", "move_back")
 	var vert_input := Input.get_axis("move_down", "move_up")
 	if flat_input or vert_input:
-		var data := {"type": "movement", "x": flat_input.x * SPEED, "y": vert_input * SPEED, "z": flat_input.y * SPEED}
-		UDPSocket.peer.put_packet(JSON.stringify(data).to_utf8_buffer())
+		UDPSocket.send_movement(Vector3(flat_input.x * SPEED, vert_input * SPEED, flat_input.y * SPEED))
 
 func _on_event_data_received(data: Dictionary) -> void:
 	match data.get("type", ""):
