@@ -1,0 +1,45 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build",
+      "type": "shell",
+      "command": "cmake -S . -B build && cmake --build build -j",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      // Vehicle comes from the PX4_SIM_MODEL env var set in the image.
+      "label": "PX4",
+      "type": "shell",
+      "command": "px4-gazebo",
+      "options": { "env": { "HEADLESS": "1" } },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "px4",
+        "pattern": { "regexp": "^ERROR.*$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "px4 starting",
+          "endsPattern": "Startup script returned successfully"
+        }
+      },
+      "presentation": { "panel": "dedicated", "group": "xr-drone" }
+    },
+    {
+      // Waits up to 30 s for PX4, so it can start alongside the PX4 task.
+      "label": "Server",
+      "type": "shell",
+      "command": "./build/xr_drone_server",
+      "dependsOn": ["Build"],
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "group": "xr-drone" }
+    },
+    {
+      "label": "PX4 + Server",
+      "dependsOn": ["PX4", "Server"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}
